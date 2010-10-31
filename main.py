@@ -131,6 +131,9 @@ class CliTwi:
         else:
             user_timeline = self.twitter.GetMentions(
                 {'since_id': self.mention_latest})
+        if user_timeline == []:
+            print 'No new tweets.'
+            return
         mle = False
         for tweet in user_timeline:
             print '\033[94m' + tweet['user']['screen_name'] + '\033[0m' + ':'
