@@ -1,0 +1,168 @@
+#!/usr/bin/env python
+
+import os
+import sys
+import simplejson as json
+from oauth import oauth
+from oauthtwitter import OAuthApi
+import config
+
+
+class CliTwi:
+
+    consumer_key = config.consumer_key
+    consumer_secret = config.consumer_secret
+    cli_twi_path = os.path.expanduser('~') + '/.clitwi'
+
+    token = None
+    secret = None
+
+    latest = 0
+    mention_latest = 0
+
+    def __init__(self):
+        os.chdir(self.cli_twi_path)
+        # Figure out the action
+        self.read_action()
+        # Verify we have all of the necessary config files
+        self.check_config()
+        self.read_config()
+        # And the power button...
+        self.run()
+
+    def read_action(self):
+        l = len(sys.argv)
+        if l == 1:
+            self.action = 'list'
+        elif l == 2:
+            arg = sys.argv[1]
+            if arg == 'setup':
+                self.action = 'setup'
+            elif arg == '-m':
+                self.action = 'mentions'
+            elif arg == '--help':
+                self.action = 'help'
+            else:
+                self.action = 'update'
+
+    def check_config(self):
+        # _config, _latest, _mention_latest
+        if not os.path.isfile('_config'):
+            print 'Missing _config'
+            sys.exit(1)
+        if not os.path.isfile('_latest'):
+            print 'Missing _latest'
+            sys.exit(1)
+        if not os.path.isfile('_mention_latest'):
+            print 'Missing _mention_latest'
+            sys.exit(1)
+
+    def read_config(self):
+        # Read the config files
+        l = open('_latest', 'r')
+        v = l.readline()
+        self.latest = str(v)
+        l.close()
+
+        m = open('_mention_latest', 'r')
+        v = m.readline()
+        self.mention_latest = str(v)
+        m.close()
+
+        c = open('_config', 'r')
+        v = c.readline()
+        j = json.loads(v)
+        self.token = j['token']
+        self.secret = j['secret']
+        c.close()
+
+    def setup(self):
+        os.system('clear')
+
+        twitter = OAuthApi(self.consumer_key, self.consumer_secret)
+
+        # Get the temporary credentials for our next few calls
+        temp_credentials = twitter.getRequestToken()
+
+        # User pastes this into their browser to bring back a pin number
+        print(twitter.getAuthorizationURL(temp_credentials))
+
+        # Get the pin # from the user and get our permanent credentials
+        oauth_verifier = raw_input('What is the PIN? ')
+        access_token = twitter.getAccessToken(temp_credentials, oauth_verifier)
+
+        self.token = access_token['oauth_token']
+        self.secret = access_token['oauth_token_secret']
+
+        f = open(os.getcwd() + '/config', 'w')
+        d = "{ \"token\": \"%s\", \"secret\": \"%s\" }" % (
+                self.token, self.secret)
+        f.write(d)
+        f.close()
+
+    def setup_api(self):
+        self.twitter = OAuthApi(self.consumer_key,
+                self.consumer_secret,
+                self.token,
+                self.secret)
+
+    def list_tweets(self, type='default'):
+        os.system('clear')
+        if type == 'default':
+            user_timeline = self.twitter.GetHomeTimeline(
+                {'since_id': self.latest})
+        else:
+            user_timeline = self.twitter.GetMentions(
+                {'since_id': self.mention_latest})
+        mle = False
+        for tweet in user_timeline:
+            print '\033[94m' + tweet['user']['screen_name'] + '\033[0m' + ':'
+            self.print_text(tweet['text'])
+            if not mle:
+                if type == 'default':
+                    self.write_latest(tweet['id'])
+                else:
+                    self.write_latest(tweet['id'], 'mention')
+                mle = True
+
+    def write_latest(self, id, type='default'):
+        if type == 'default':
+            f = open('_latest', 'w')
+        else:
+            f = open('_mention_latest', 'w')
+        f.write(str(id))
+        f.close()
+
+    def print_text(self, text):
+        l = len(text)
+        if l > 77:
+            print '  ' + text[:77]
+            print '  ' + text[77:]
+        else:
+            print '  ' + text
+
+    def send_tweet(self):
+        tweet = sys.argv[1]
+        if len(tweet) > 140:
+            print 'Too long'
+            sys.exit(1)
+            return
+        else:
+            update = self.twitter.UpdateStatus(str(tweet))
+            print 'Sent!'
+
+    def run(self):
+        self.setup_api()
+        if self.action == 'list':
+            self.list_tweets()
+        elif self.action == 'update':
+            self.send_tweet()
+        elif self.action == 'setup':
+            self.setup()
+        elif self.action == 'help':
+            self.show_help()
+        elif self.action == 'mentions':
+            self.list_tweets('mentions')
+
+if __name__ == "__main__":
+    twitter = CliTwi()

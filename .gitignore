@@ -1,0 +1,5 @@
+*.pyc
+*.swp
+_latest
+_config
+_mention_latest
