@@ -22,6 +22,8 @@ from oauth import oauth
 from oauthtwitter import OAuthApi
 import config
 
+__version__ = '1.0'
+
 
 class CliTwi:
 
@@ -165,6 +167,15 @@ class CliTwi:
         else:
             update = self.twitter.UpdateStatus(str(tweet))
             print 'Sent!'
+
+    def show_help(self):
+        print 'Cli Twi - version %s' % __version__
+        print 'main.py [options]'
+        print 'main.py - will print latest tweets'
+        print 'main.py "Some message" - will update your status'
+        print 'main.py -m - will print latest mentions'
+        print 'main.py setup - will run the OAuth process'
+        print 'main.py --help - will display this help'
 
     def run(self):
         self.setup_api()
