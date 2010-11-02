@@ -28,6 +28,15 @@ Then you can run:
     $ m "Your tweet"
     $ m --help
 
+### Dependencies
+
+There are a few dependencies. Some of them might already be installed on your
+system.
+
+* [python-oauth](http://github.com/leah/python-oauth/)
+* [httplib2](http://code.google.com/p/httplib2/)
+* [simplejson](http://code.google.com/p/simplejson/)
+
 ### Contribution
 
 Any hacks or improvements are welcome. Send all your pull requests along. The
