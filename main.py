@@ -37,6 +37,8 @@ class CliTwi:
     latest = 0
     mention_latest = 0
 
+    config_ok = False
+
     def __init__(self):
         os.chdir(self.cli_twi_path)
         # Figure out the action
@@ -64,17 +66,22 @@ class CliTwi:
 
     def check_config(self):
         # _config, _latest, _mention_latest
+        self.config_ok = True
         if not os.path.isfile('_config'):
             print 'Missing _config'
-            sys.exit(1)
+            self.config_ok = False
         if not os.path.isfile('_latest'):
             print 'Missing _latest'
-            sys.exit(1)
+            self.config_ok = False
         if not os.path.isfile('_mention_latest'):
             print 'Missing _mention_latest'
-            sys.exit(1)
+            self.config_ok = False
 
     def read_config(self):
+        if self.action == 'setup' or self.action == 'help':
+            return
+        if not self.config_ok:
+            return
         # Read the config files
         l = open('_latest', 'r')
         v = l.readline()
@@ -111,11 +118,16 @@ class CliTwi:
         self.token = access_token['oauth_token']
         self.secret = access_token['oauth_token_secret']
 
-        f = open(os.getcwd() + '/config', 'w')
+        f = open(os.getcwd() + '/_config', 'w')
         d = "{ \"token\": \"%s\", \"secret\": \"%s\" }" % (
                 self.token, self.secret)
         f.write(d)
         f.close()
+
+        self.write_latest(1)
+        self.write_latest(1, 'mentions')
+
+        print 'Clitwi was successfully set up.'
 
     def setup_api(self):
         self.twitter = OAuthApi(self.consumer_key,
@@ -181,15 +193,19 @@ class CliTwi:
         print 'main.py --help - will display this help'
 
     def run(self):
+        # Actions that don't require any config (help, setup)
+        if self.action == 'setup':
+            self.setup()
+        elif self.action == 'help':
+            self.show_help()
+        # Check if we have correct config settings
+        if not self.config_ok:
+            return
         self.setup_api()
         if self.action == 'list':
             self.list_tweets()
         elif self.action == 'update':
             self.send_tweet()
-        elif self.action == 'setup':
-            self.setup()
-        elif self.action == 'help':
-            self.show_help()
         elif self.action == 'mentions':
             self.list_tweets('mentions')
 
