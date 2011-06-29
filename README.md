@@ -18,11 +18,11 @@ Installation
 * Move all the files to that directory
 * Register an application on Twitter
 * Put your application details into `config.py`
-* Run `python main.py setup`
+* Run `python clitwi.py setup`
 
 Optionally, set up a bash alias:
 
-    alias m='/home/you/.clitwi/main.py'
+    alias m='/home/you/.clitwi/clitwi.py'
 
 Then you can run:
 
