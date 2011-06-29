@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # Cli-twi
-# Copyright (C) 2010 Honza Pokorny <me@honza.ca>
+# Copyright (C) 2011 Honza Pokorny <me@honza.ca>
 
 import os
 import sys
@@ -8,7 +8,7 @@ import json
 from oauthtwitter import OAuthApi
 import config
 
-__version__ = '1.0'
+__version__ = '1.3'
 
 
 class CliTwi(object):
@@ -19,9 +19,6 @@ class CliTwi(object):
 
     token = None
     secret = None
-
-    latest = 0
-    mention_latest = 0
 
     config_ok = False
 
@@ -51,16 +48,9 @@ class CliTwi(object):
                 self.action = 'update'
 
     def check_config(self):
-        # _config, _latest, _mention_latest
         self.config_ok = True
         if not os.path.isfile('_config'):
             print 'Missing _config'
-            self.config_ok = False
-        if not os.path.isfile('_latest'):
-            print 'Missing _latest'
-            self.config_ok = False
-        if not os.path.isfile('_mention_latest'):
-            print 'Missing _mention_latest'
             self.config_ok = False
 
     def read_config(self):
@@ -68,23 +58,16 @@ class CliTwi(object):
             return
         if not self.config_ok:
             return
-        # Read the config files
-        l = open('_latest', 'r')
-        v = l.readline()
-        self.latest = str(v)
-        l.close()
+        # Read the config file
+        file = open('_config', 'r')
+        v = file.read()
+        config = json.loads(v)
+        file.close()
 
-        m = open('_mention_latest', 'r')
-        v = m.readline()
-        self.mention_latest = str(v)
-        m.close()
-
-        c = open('_config', 'r')
-        v = c.readline()
-        j = json.loads(v)
-        self.token = j['token']
-        self.secret = j['secret']
-        c.close()
+        self.latest = config['latest']
+        self.mention = config['mention']
+        self.token = config['token']
+        self.secret = config['secret']
 
     def setup(self):
         os.system('clear')
@@ -104,14 +87,8 @@ class CliTwi(object):
         self.token = access_token['oauth_token']
         self.secret = access_token['oauth_token_secret']
 
-        f = open(os.getcwd() + '/_config', 'w')
-        d = "{ \"token\": \"%s\", \"secret\": \"%s\" }" % (
-                self.token, self.secret)
-        f.write(d)
-        f.close()
-
-        self.write_latest(1)
-        self.write_latest(1, 'mentions')
+        self.latest = 1
+        self.mention = 1
 
         print 'Clitwi was successfully set up.'
 
@@ -124,32 +101,26 @@ class CliTwi(object):
     def list_tweets(self, type='default'):
         os.system('clear')
         if type == 'default':
-            user_timeline = self.twitter.GetHomeTimeline(
-                {'since_id': self.latest})
+            user_timeline = self.twitter.GetHomeTimeline({
+                'since_id': self.latest
+            })
         else:
-            user_timeline = self.twitter.GetMentions(
-                {'since_id': self.mention_latest})
+            user_timeline = self.twitter.GetMentions({
+                'since_id': self.mention
+            })
         if user_timeline == []:
             print 'No new tweets.'
             return
-        mle = False
+        first = True
         for tweet in user_timeline:
-            print '\033[94m' + tweet['user']['screen_name'] + '\033[0m' + ':'
+            print tweet['user']['screen_name'] + ':'
             self.print_text(tweet['text'])
-            if not mle:
+            if first:
                 if type == 'default':
-                    self.write_latest(tweet['id'])
+                    self.latest = tweet['id']
                 else:
-                    self.write_latest(tweet['id'], 'mention')
-                mle = True
-
-    def write_latest(self, id, type='default'):
-        if type == 'default':
-            f = open('_latest', 'w')
-        else:
-            f = open('_mention_latest', 'w')
-        f.write(str(id))
-        f.close()
+                    self.mention = tweet['id']
+                first = False
 
     def print_text(self, text):
         l = len(text)
@@ -166,7 +137,7 @@ class CliTwi(object):
             sys.exit(1)
             return
         else:
-            update = self.twitter.UpdateStatus(str(tweet))
+            self.twitter.UpdateStatus(str(tweet))
             print 'Sent!'
 
     def show_help(self):
@@ -195,5 +166,18 @@ class CliTwi(object):
         elif self.action == 'mentions':
             self.list_tweets('mentions')
 
+    def finish(self):
+        d = {
+            'token': self.token,
+            'secret': self.secret,
+            'latest': self.latest,
+            'mention': self.mention
+        }
+        f = open(os.getcwd() + '/_config', 'w')
+        f.write(json.dumps(d))
+        f.close()
+
+
 if __name__ == "__main__":
     twitter = CliTwi()
+    twitter.finish()
