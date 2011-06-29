@@ -23,7 +23,7 @@ import urlparse
 import time
 
 # Non library modules
-import simplejson
+import json
 import oauth2 as oauth
 
 # Taken from oauth implementation at: http://github.com/harperreed/twitteroauth-python/tree/master
@@ -291,6 +291,6 @@ class OAuthApi():
         Returns:
           Returns the twitter.User object
         '''
-        json = self._FetchUrl("https://api.twitter.com/1/" + call + ".json", type, parameters)
-        return simplejson.loads(json)
+        json_str = self._FetchUrl("https://api.twitter.com/1/" + call + ".json", type, parameters)
+        return json.loads(json_str)
         
