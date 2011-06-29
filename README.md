@@ -14,6 +14,7 @@ Features
 Installation
 ------------
 
+* pip install -r requirements.txt
 * Create a `.clitwi` directory in your home directory
 * Move all the files to that directory
 * Register an application on Twitter
@@ -22,7 +23,7 @@ Installation
 
 Optionally, set up a bash alias:
 
-    alias m='/home/you/.clitwi/clitwi.py'
+    alias m='path/to/env/bin/activate && /home/you/.clitwi/clitwi.py'
 
 Then you can run:
 
